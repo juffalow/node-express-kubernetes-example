@@ -1,0 +1,116 @@
+name: Default
+
+on:
+  push:
+    branches:
+      - master
+  release:
+    types:
+      - published
+
+# these two values are used multiple times in the workflow
+# so it is easier to set them just here and reuse on other places
+env:
+  PROJECT_NAME: node-express-kubernetes-example
+  ORGANIZATION: juffalow
+
+# There are only two main events that can happen:
+# * push / merge to the master
+# * release
+#
+# When anyone push anything to the master, we want to run
+# some default checks like lint, tests, or if build passes.
+# If these checks are successful, we want to build the whole
+# project as container and push it to container registry.
+# In case of dev environment available, re-deploy latest version.
+#
+# Second case is, when some new feature or fix is ready
+# and it should go public. In this case, we can create a release
+# in GitHub and publish it. This will trigger release event
+# with the tag set in GITHUB_REF env variable. We can again
+# run all checks and build container but this time it is not
+# tagged as "latest", but the tag from the release is used.
+jobs:
+  lint_and_build:
+    name: Lint and build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '14.x'
+    - name: Install dependencies
+      run: yarn install
+    - name: Lint
+      run: yarn run lint
+    - name: Build
+      run: yarn run build
+  push_latest:
+    name: Push latest
+    runs-on: ubuntu-latest
+    # run this job only if "lint_and_build" jobs ends with success
+    needs: [lint_and_build]
+    # run this job only if someone pushed something to the master
+    if: github.event_name == 'push'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: docker build -t $ORGANIZATION/$PROJECT_NAME .
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        # this has to be set in the repositor settings
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Push image to Digital Ocean Container Registry
+      run: |
+        VERSION=latest
+        
+        docker tag $ORGANIZATION/$PROJECT_NAME registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
+        
+        doctl auth init
+        doctl registry login
+        
+        docker push registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
+  push:
+    name: Push container
+    runs-on: ubuntu-latest
+    needs: [lint_and_build]
+    if: github.event_name == 'release'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: docker build -t $ORGANIZATION/$PROJECT_NAME .
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Push image to Digital Ocean Container Registry
+      run: |
+        VERSION=${GITHUB_REF#"refs/tags/"}
+        
+        docker tag $ORGANIZATION/$PROJECT_NAME registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
+        
+        doctl auth init
+        doctl registry login
+        
+        docker push registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
+  deploy:
+    needs: push
+    name: Deploy to prod
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Obtain kubernetes config
+      env:
+        cluster: ${{ secrets.DIGITALOCEAN_KUBERNETES_PRODUCTION }}
+      run: doctl kubernetes cluster kubeconfig save $cluster
+    - name: Deploy new version
+      run: |
+        VERSION=${GITHUB_REF#"refs/tags/"}
+        
+        kubectl set image deployment/$BACKEND_PROJECT_NAME-deployment $BACKEND_PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$BACKEND_PROJECT_NAME:$VERSION

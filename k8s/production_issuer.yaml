@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: node-express-kubernetes-example-letsencrypt-dev
+spec:
+  acme:
+    email: juffalow@juffalow.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: node-express-kubernetes-example-letsencrypt-private-key
+    solvers:
+    - http01:
+        ingress:
+          class: nginx

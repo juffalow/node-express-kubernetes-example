@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-express-kubernetes-example-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: node-express-kubernetes-example-deployment
+  template:
+    metadata:
+      labels:
+        app: node-express-kubernetes-example-deployment
+    spec:
+      containers:
+      - name: node-express-kubernetes-example-application
+        image: registry.digitalocean.com/juffalow/node-express-kubernetes-example:latest
+        ports:
+          # port number where the application is listening
+          - containerPort: 3001
+        env:
+          # name onf the environment variable that will be passed to the application
+          - name: SECRET_PARAMETER
+            valueFrom:
+              secretKeyRef:
+                # name of the secret where the value is
+                name: node-express-kubernetes-example-secret
+                key: SECRET_PARAMETER
+        # the kubelet uses liveness probes to know when to restart a container
+        livenessProbe:
+          httpGet:
+            path: /health/liveness
+            port: 3001
+          # this field tells the kubelet that it should wait 5 seconds before performing the first probe
+          initialDelaySeconds: 5
+          # this field specifies that the kubelet should perform a liveness probe every 20 seconds
+          periodSeconds: 20
+        # the kubelet uses readiness probes to know when a container is ready to start accepting traffic
+        readinessProbe:
+          httpGet:
+            path: /health/liveness
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 20
+      imagePullSecrets:
+      - name: registry-juffalow
