@@ -2,6 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: node-express-kubernetes-example-deployment
+  labels:
+    app: node-express-kubernetes-example
+    tier: backend
+    environment: development
+    app.kubernetes.io/name: node-express-kubernetes-example
+    app.kubernetes.io/component: backend
 spec:
   replicas: 2
   selector:
@@ -11,13 +17,24 @@ spec:
     metadata:
       labels:
         app: node-express-kubernetes-example-deployment
+        tier: backend
     spec:
       containers:
       - name: node-express-kubernetes-example-application
         image: registry.digitalocean.com/juffalow/node-express-kubernetes-example:latest
+        imagePullPolicy: Always
         ports:
           # port number where the application is listening
           - containerPort: 3001
+        # https://kubernetes.io/docs/concepts/policy/pod-security-policy/
+        # https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - all
         env:
           # name onf the environment variable that will be passed to the application
           - name: SECRET_PARAMETER
@@ -27,6 +44,7 @@ spec:
                 name: node-express-kubernetes-example-secret
                 key: SECRET_PARAMETER
         # the kubelet uses liveness probes to know when to restart a container
+        # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
         livenessProbe:
           httpGet:
             path: /health/liveness
@@ -36,6 +54,7 @@ spec:
           # this field specifies that the kubelet should perform a liveness probe every 20 seconds
           periodSeconds: 20
         # the kubelet uses readiness probes to know when a container is ready to start accepting traffic
+        # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-readiness-probes
         readinessProbe:
           httpGet:
             path: /health/liveness

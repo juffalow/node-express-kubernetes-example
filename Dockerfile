@@ -1,22 +1,24 @@
-FROM node:14-alpine AS build
+FROM node:16-alpine AS build
 
-USER node
-RUN mkdir /home/node/node-express-kubernetes-example/ && chown -R node:node /home/node/node-express-kubernetes-example
-WORKDIR /home/node/node-express-kubernetes-example
+WORKDIR /home/node
 
-COPY --chown=node:node . .
+COPY . .
 RUN yarn install --frozen-lockfile && yarn build
 
-FROM node:14-alpine
+FROM node:16-alpine
 
-USER node
-EXPOSE 3001
+RUN addgroup --gid 3000 --system juffgroup \
+  && adduser  --uid 2000 --system --ingroup juffgroup juffuser
 
-RUN mkdir /home/node/node-express-kubernetes-example/ && chown -R node:node /home/node/node-express-kubernetes-example
-WORKDIR /home/node/node-express-kubernetes-example
+USER 2000:3000
 
-COPY --chown=node:node --from=build /home/node/node-express-kubernetes-example/dist ./dist
-COPY --chown=node:node --from=build /home/node/node-express-kubernetes-example/package.json /home/node/node-express-kubernetes-example/yarn.lock ./
+RUN mkdir /home/juffuser/node-express-kubernetes-example/
+WORKDIR /home/juffuser/node-express-kubernetes-example
+
+COPY --from=build /home/node/dist ./dist
+COPY --from=build /home/node/package.json /home/node/yarn.lock ./
 RUN yarn install --frozen-lockfile --production
+
+EXPOSE 3001
 
 CMD [ "node", "dist/index.js" ]
