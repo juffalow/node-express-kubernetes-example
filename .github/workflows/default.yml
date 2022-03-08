@@ -36,9 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2
       with:
-        node-version: '14.x'
+        node-version: 16
+        cache: 'yarn'
     - name: Install dependencies
       run: yarn install
     - name: Lint
@@ -59,7 +60,7 @@ jobs:
     - name: Install doctl
       uses: digitalocean/action-doctl@v2
       with:
-        # this has to be set in the repositor settings
+        # this has to be set in the repository settings
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
     - name: Push image to Digital Ocean Container Registry
       run: |
