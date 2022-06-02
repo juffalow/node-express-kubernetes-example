@@ -7,6 +7,8 @@ on:
         type: string
         required: true
         description: Version which should be deployed, e.g. 1.2.3
+      environment:
+        type: environment
 
 env:
   PROJECT_NAME: node-express-kubernetes-example
