@@ -90,7 +90,7 @@ jobs:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
     - name: Set version
       id: version
-      run: echo ::set-output name=tag::latest
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
     - name: Push image to Digital Ocean Container Registry
       env:
         VERSION: ${{ steps.version.outputs.tag }}
