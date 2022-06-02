@@ -62,10 +62,13 @@ jobs:
       with:
         # this has to be set in the repository settings
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Set version
+      id: version
+      run: echo ::set-output name=tag::latest
     - name: Push image to Digital Ocean Container Registry
+      env:
+        VERSION: ${{ steps.version.outputs.tag }}
       run: |
-        VERSION=latest
-        
         docker tag $ORGANIZATION/$PROJECT_NAME registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
         
         doctl auth init
@@ -85,10 +88,13 @@ jobs:
       uses: digitalocean/action-doctl@v2
       with:
         token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+    - name: Set version
+      id: version
+      run: echo ::set-output name=tag::latest
     - name: Push image to Digital Ocean Container Registry
-      run: |
-        VERSION=${GITHUB_REF#"refs/tags/"}
-        
+      env:
+        VERSION: ${{ steps.version.outputs.tag }}
+      run: |        
         docker tag $ORGANIZATION/$PROJECT_NAME registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
         
         doctl auth init
@@ -110,8 +116,11 @@ jobs:
       env:
         cluster: ${{ secrets.DIGITALOCEAN_KUBERNETES_PRODUCTION }}
       run: doctl kubernetes cluster kubeconfig save $cluster
+    - name: Set version
+      id: version
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
     - name: Deploy new version
+      env:
+        VERSION: ${{ steps.version.outputs.tag }}
       run: |
-        VERSION=${GITHUB_REF#"refs/tags/"}
-        
         kubectl set image deployment/$BACKEND_PROJECT_NAME-deployment $BACKEND_PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$BACKEND_PROJECT_NAME:$VERSION
