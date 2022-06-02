@@ -9,7 +9,7 @@ const server = http.createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const appId = `1.2.${Math.floor(Math.random() * 1000)}`;
+const appId = `1.3.${Math.floor(Math.random() * 1000)}`;
 let isAlive = true;
 
 app.get('/', (req, res) => {
