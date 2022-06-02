@@ -3,7 +3,7 @@ name: Deploy version
 on:
   workflow_dispatch:
     inputs:
-      version:
+      tag:
         type: string
         required: true
         description: Version which should be deployed, e.g. 1.2.3
@@ -28,9 +28,9 @@ jobs:
       run: doctl kubernetes cluster kubeconfig save $cluster
     - name: Set version
       id: version
-      run: echo ::set-output name=tag::${{ github.event.inputs.message }}
+      run: echo ::set-output name=tag::${{ github.event.inputs.tag }}
     - name: Deploy new version
       env:
         VERSION: ${{ steps.version.outputs.tag }}
       run: |
-        kubectl set image deployment/$BACKEND_PROJECT_NAME-deployment $BACKEND_PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$BACKEND_PROJECT_NAME:$VERSION
+        kubectl set image deployment/$PROJECT_NAME-deployment $PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
