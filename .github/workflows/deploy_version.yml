@@ -6,9 +6,15 @@ on:
       tag:
         type: string
         required: true
-        description: Version which should be deployed, e.g. 1.2.3
+        description: Which tag you want to deploy? (e.g. 1.2.3)
       environment:
-        type: environment
+        type: choice
+        required: true
+        default: 'dev' 
+        description: To which environment you want to deploy?
+        options: 
+        - dev
+        - prod
 
 env:
   PROJECT_NAME: node-express-kubernetes-example
@@ -18,6 +24,7 @@ jobs:
   deploy:
     name: Deploy to prod
     runs-on: ubuntu-latest
+    if: github.event.inputs.environment == 'prod'
     steps:
     - uses: actions/checkout@v2
     - name: Install doctl
