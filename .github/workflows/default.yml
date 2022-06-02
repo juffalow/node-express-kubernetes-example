@@ -123,4 +123,4 @@ jobs:
       env:
         VERSION: ${{ steps.version.outputs.tag }}
       run: |
-        kubectl set image deployment/$BACKEND_PROJECT_NAME-deployment $BACKEND_PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$BACKEND_PROJECT_NAME:$VERSION
+        kubectl set image deployment/$PROJECT_NAME-deployment $PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
