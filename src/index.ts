@@ -2,12 +2,14 @@ import express from 'express';
 import http from 'http';
 import { createTerminus } from '@godaddy/terminus';
 import config from './config';
+import cors from './cors';
 
 const app = express();
 const server = http.createServer(app);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors);
 
 const appId = `1.4.${Math.floor(Math.random() * 1000)}`;
 let isAlive = true;
