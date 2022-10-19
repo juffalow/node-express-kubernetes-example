@@ -8,12 +8,6 @@ on:
     types:
       - published
 
-# these two values are used multiple times in the workflow
-# so it is easier to set them just here and reuse on other places
-env:
-  PROJECT_NAME: node-express-kubernetes-example
-  ORGANIZATION: juffalow
-
 # There are only two main events that can happen:
 # * push / merge to the master
 # * release
@@ -55,72 +49,23 @@ jobs:
     if: github.event_name == 'push'
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: docker build -t $ORGANIZATION/$PROJECT_NAME .
-    - name: Install doctl
-      uses: digitalocean/action-doctl@v2
-      with:
-        # this has to be set in the repository settings
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-    - name: Set version
-      id: version
+    - name: Set variables
+      id: vars
       run: echo ::set-output name=tag::latest
-    - name: Push image to Digital Ocean Container Registry
-      env:
-        VERSION: ${{ steps.version.outputs.tag }}
-      run: |
-        docker tag $ORGANIZATION/$PROJECT_NAME registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
-        
-        doctl auth init
-        doctl registry login
-        
-        docker push registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
-  push:
-    name: Push container
-    runs-on: ubuntu-latest
-    needs: [lint_and_build]
-    if: github.event_name == 'release'
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: docker build -t $ORGANIZATION/$PROJECT_NAME .
-    - name: Install doctl
-      uses: digitalocean/action-doctl@v2
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-    - name: Set version
-      id: version
-      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-    - name: Push image to Digital Ocean Container Registry
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_CONTAINER_REGISTRY_REGION }}
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Build, tag and push docker image to Amazon ECR
       env:
-        VERSION: ${{ steps.version.outputs.tag }}
-      run: |        
-        docker tag $ORGANIZATION/$PROJECT_NAME registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
-        
-        doctl auth init
-        doctl registry login
-        
-        docker push registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
-  deploy:
-    needs: push
-    name: Deploy to prod
-    runs-on: ubuntu-latest
-    if: github.event_name == 'release'
-    steps:
-    - uses: actions/checkout@v2
-    - name: Install doctl
-      uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-    - name: Obtain kubernetes config
-      env:
-        cluster: ${{ secrets.DIGITALOCEAN_KUBERNETES_PRODUCTION }}
-      run: doctl kubernetes cluster kubeconfig save $cluster
-    - name: Set version
-      id: version
-      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-    - name: Deploy new version
-      env:
-        VERSION: ${{ steps.version.outputs.tag }}
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: node-docker-kubernetes
+        TAG: ${{ steps.vars.outputs.tag }}
       run: |
-        kubectl set image deployment/$PROJECT_NAME-deployment $PROJECT_NAME-application=registry.digitalocean.com/$ORGANIZATION/$PROJECT_NAME:$VERSION
+        docker build -t $REGISTRY/$REPOSITORY:$TAG .
+        docker push $REGISTRY/$REPOSITORY:$TAG
