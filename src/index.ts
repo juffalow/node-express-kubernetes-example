@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors);
 
 const appId = `1.4.${Math.floor(Math.random() * 1000)}`;
-let isAlive = true;
+let isHealthy = true;
 
 app.get('/', (req, res) => {
   res.send('Hello kubernetes!');
@@ -20,6 +20,13 @@ app.get('/', (req, res) => {
 
 app.get('/app-id', (req, res) => {
   res.json({ appId });
+});
+
+app.get('/ping', (req, res) => {
+  res.json({
+    appId,
+    isHealthy,
+  });
 });
 
 app.get('/env', (req, res) => {
@@ -33,10 +40,10 @@ app.get('/env/:name', (req, res) => {
   });
 });
 
-app.get('/alive/toggle', (req, res) => {
-  isAlive = false;
-  console.log(`Alive is changed to ${isAlive}!`);
-  res.json({ isAlive });
+app.get('/health/toggle', (req, res) => {
+  isHealthy = false;
+  console.log(`isHealthy is changed to ${isHealthy}!`);
+  res.json({ isHealthy });
 });
 
 async function onSignal() {
@@ -48,10 +55,12 @@ async function onShutdown () {
 }
 
 async function onHealthCheck() {
-  console.log(`Health check { isAlive: ${isAlive} } ...`);
-  if (!isAlive) {
-    console.log('Throwing error!');
-    throw new Error('Server is not alive!');
+  console.log(`Health check { isHealthy: ${isHealthy} } ...`);
+
+  if (!isHealthy) {
+    console.error('Server is not healthy!');
+
+    throw new Error('Server is not healthy!');
   }
 }
 
