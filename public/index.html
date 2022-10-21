@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node Docker Kubernetes Example</title>
+  <meta name="description" content="Simple NodeJS application to explain basic parts of Kubernetes.">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+<body>
+  <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="Third navbar example">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Node Kubernetes Example</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample03" aria-controls="navbarsExample03" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsExample03">
+        <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+          
+        </ul>
+        <ul class="navbar-nav mb-2 mb-sm-0">
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/juffalow/node-express-kubernetes-example">GitHub</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container mt-4">    
+    <div class="row">
+      <div class="col">
+        <h1>Node Kubernetes Example</h1>
+        <p class="lead">Simple NodeJS application to explain basic parts of Kubernetes.</p>
+        <p>You can read <a href="https://juffalow.com/blog/javascript/run-simple-node-application-in-kubernetes-cluster">here</a> how to run Node.js application in Kubernetes cluster (DigitalOcean).</p>
+        <br />
+        <p><strong>Stop</strong> button stops making requests.</p>
+        <p><strong>Toggle health</strong> button does a request to <code>/health/toggle</code> and makes one of the pods unhealthy. This causes the pod to be restarted.</p>
+      </div>
+    </div>
+    <div class="row mt-4">
+      <div class="col">
+        <button type="button" class="btn btn-danger" onclick="stop()">Stop</button>
+        <button type="button" class="btn btn-warning" onclick="toggle()">Toggle health</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Pod name</th>
+              <th>Health</th>
+            </tr>
+          </thead>
+          <tbody id="results">
+    
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <footer class="row row-cols-1 row-cols-sm-2 row-cols-md-4 py-4 my-4 border-top">
+      <div class="col mb-3">
+        <h5>Blog</h5>
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2"><a href="https://juffalow.com/blog/tags/git" class="nav-link p-0 text-muted">Git</a></li>
+          <li class="nav-item mb-2"><a href="https://juffalow.com/blog/tags/node" class="nav-link p-0 text-muted">Node</a></li>
+          <li class="nav-item mb-2"><a href="https://juffalow.com/blog/tags/example-project" class="nav-link p-0 text-muted">Example project</a></li>
+        </ul>
+      </div>
+  
+      <div class="col mb-3">
+        <h5>Following</h5>
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2"><a href="https://lukasmestan.com/" class="nav-link p-0 text-muted">Lukáš Mešťan</a></li>
+          <li class="nav-item mb-2"><a href="https://www.patrikmasiar.com/" class="nav-link p-0 text-muted">Patrik Mäsiar</a></li>
+        </ul>
+      </div>
+  
+      <div class="col mb-3">
+        <h5>Side projects</h5>
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2"><a href="https://quotes.juffalow.com/" class="nav-link p-0 text-muted">Quotes</a></li>
+          <li class="nav-item mb-2"><a href="https://wordle.juffalow.com/" class="nav-link p-0 text-muted">Tech Wordle</a></li>
+          <li class="nav-item mb-2"><a href="https://pentest-tool-lite.com/" class="nav-link p-0 text-muted">Pentest Tool Lite</a></li>
+          <li class="nav-item mb-2"><a href="https://zdielaj.si/" class="nav-link p-0 text-muted">Zdielaj.si</a></li>
+        </ul>
+      </div>
+
+      <div class="col mb-3">
+        <h5>Find me on</h5>
+        <ul class="nav flex-column">
+          <li class="nav-item mb-2"><a href="https://www.linkedin.com/in/matej-jellus-34459713a/" class="nav-link p-0 text-muted">LinkedIn</a></li>
+          <li class="nav-item mb-2"><a href="https://github.com/juffalow" class="nav-link p-0 text-muted">GitHub</a></li>
+          <li class="nav-item mb-2"><a href="https://twitter.com/juffalow" class="nav-link p-0 text-muted">Twitter</a></li>
+          <li class="nav-item mb-2"><a href="https://instagram.com/juffalow" class="nav-link p-0 text-muted">Instagram</a></li>
+          <li class="nav-item mb-2"><a href="https://www.strava.com/athletes/36216379" class="nav-link p-0 text-muted">Strava</a></li>
+        </ul>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let number = 0;
+    let isRunning = true;
+
+    const load = async () => {
+      return fetch("https://node-example.juffalow.com/ping")
+        .then(response => response.json())
+        .then((data) => {
+          const node = document.createElement("tr");
+          node.innerHTML = `<td>${number}</td><td>${data.name}</td><td style="color: ${data.isHealthy ? 'green' : 'red'}">&#9679;</td>`;
+          
+          document.getElementById("results").prepend(node);
+        });
+    }
+
+    const sleep = async (ms) => {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    const start = async () => {
+      while (isRunning) {
+        number++;
+        await load();
+        await sleep(Math.floor((Math.random() * 2000)+ 1500));
+      }
+    }
+
+    const stop = async () => {
+      isRunning = false;
+    }
+
+    const toggle = async () => {
+      return fetch("https://node-example.juffalow.com/health/toggle");
+    }
+
+    start();
+  </script>
+</body>
+</html>
