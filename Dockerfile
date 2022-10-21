@@ -16,6 +16,7 @@ RUN mkdir /home/juffuser/node-express-kubernetes-example/
 WORKDIR /home/juffuser/node-express-kubernetes-example
 
 COPY --from=build /home/node/dist ./dist
+COPY --from=build /home/node/public ./public
 COPY --from=build /home/node/package.json /home/node/yarn.lock ./
 RUN yarn install --frozen-lockfile --production
 
