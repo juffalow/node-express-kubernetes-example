@@ -1,8 +1,10 @@
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import { createTerminus } from '@godaddy/terminus';
 import config from './config';
 import cors from './cors';
+import names from './names';
 
 const app = express();
 const server = http.createServer(app);
@@ -11,20 +13,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors);
 
-const appId = `1.4.${Math.floor(Math.random() * 1000)}`;
+const name = names[Math.floor(Math.random() * names.length)] + '_' + Math.floor(Math.random() * 100);
 let isHealthy = true;
 
 app.get('/', (req, res) => {
-  res.send('Hello kubernetes!');
-});
-
-app.get('/app-id', (req, res) => {
-  res.json({ appId });
+  res.sendFile(path.resolve(__dirname, '..', 'public/', 'index.html'))
 });
 
 app.get('/ping', (req, res) => {
   res.json({
-    appId,
+    name,
     isHealthy,
   });
 });
