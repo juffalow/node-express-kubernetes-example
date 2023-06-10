@@ -2,6 +2,8 @@
 
 Simple NodeJS application to explain basic parts of Kubernetes.
 
+* [Run simple Node.js application in Kubernetes cluster (DigitalOcean)](https://juffalow.com/blog/javascript/run-simple-node-application-in-kubernetes-cluster)
+
 ## Routes
 
 The `/app-id` route returns random string generated on application start, so that user can see if he is connecting to different pods (containers).
@@ -20,64 +22,6 @@ The `/evn/:name` route returns environment variable as a proof that the applicat
 
 ```json
 {"secretParameter":"DatabaseCredentials"}
-```
-
-## Run project in Digital Ocean Kubernetes cluster
-
-#### Pre-Installed Apps
-
-Install these 1-click apps to your Kubernetes cluster. This can be done directly in DigitalOcean control panel.
-
-* [NGINX Ingress Controller](https://marketplace.digitalocean.com/apps/nginx-ingress-controller) (mandatory)
-* [Kubernetes Metrics Server](https://marketplace.digitalocean.com/apps/kubernetes-metrics-server) (optional)
-
-#### Cert manager
-
-Install:
-
-```shell
-kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.4.0/cert-manager.yaml
-```
-
-Verify the installation:
-
-```shell
-kubectl get pods --namespace cert-manager
-```
-
-#### Install [doctl](https://www.digitalocean.com/docs/apis-clis/doctl/)
-
-```shell
-brew install doctl
-```
-
-#### Authenticate
-
-```shell
-doctl auth init --context do-private-registry
-
-# verify
-doctl account get
-```
-
-#### Login to registry
-
-```shell
-doctl registry login
-```
-
-#### Get available nodes
-
-```shell
-kubectl --kubeconfig="node-docker-kubernetes-k8s-1602707832401-kubeconfig.yaml" get nodes
-```
-
-#### Upload credentials to DO Kubernetes cluster
-
-This will allow Kubernetes to pull images from the private docker image registry.
-
-```shell
-doctl registry kubernetes-manifest | kubectl apply -f -
 ```
 
 ## Test readiness probe
